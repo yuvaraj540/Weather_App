@@ -3,11 +3,19 @@ import { getCurrentWeather } from '../../Service/weatherApiService';
 import WeatherCard from '../../Card/WeatherCard';
 import HourlyForecastCard from '../../Card/HourlyForecastCard';
 import DailyForecastCard from '../../Card/DailyForecastCard';
+import weatherStyleComponent from './WeatherPage.module.css';
 
 const WeatherPage = () => {
   const [city, setCity] = useState('');
   const [weatherData, setWeatherData] = useState(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   const handleSearch = async () => {
     if (!city.trim()) {
@@ -15,13 +23,17 @@ const WeatherPage = () => {
       return;
     }
 
+    setLoading(true);
+    setWeatherData(null);
+    setError('');
+
     try {
       const data = await getCurrentWeather(city);
       setWeatherData(data);
-      setError('');
     } catch (err) {
-      setWeatherData(null);
       setError('❌ City not found. Try another one.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -35,6 +47,7 @@ const WeatherPage = () => {
           placeholder="Enter city name"
           value={city}
           onChange={(e) => setCity(e.target.value)}
+          onKeyDown={handleKeyPress}
           className="w-full p-3 mb-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
         />
 
@@ -47,33 +60,30 @@ const WeatherPage = () => {
 
         {error && <p className="text-red-600 mt-4 text-sm">{error}</p>}
 
-        {weatherData && (
+        {loading && (
+          <div className={weatherStyleComponent.loaderContainer}>
+            <div className={weatherStyleComponent.loader}></div>
+            <p className={weatherStyleComponent.loadingText}>Fetching Weather Intelligence...</p>
+          </div>
+        )}
+
+        {!loading && weatherData && (
           <div className="mt-6 space-y-6">
             <WeatherCard weatherData={weatherData.current} />
           </div>
         )}
       </div>
-      <div>
-            {weatherData && (
-              
-                <div className="flex gap-4">
-                  <div className="flex-1 overflow-x-auto">
-                    <HourlyForecastCard weatherData={weatherData} />
-                  </div>
-                </div>
-              
-            )}
-      </div>
-      <div>
-            {weatherData && (
-              
-                <div className="flex gap-4">
-                  <div className="flex-1 overflow-x-auto">
-                    <DailyForecastCard weatherData={weatherData} />
-                  </div>
-                </div>
-            )}
-      </div>
+
+      {!loading && weatherData && (
+        <>
+          <div className="mt-6 w-full px-2 max-w-4xl">
+            <HourlyForecastCard weatherData={weatherData} />
+          </div>
+          <div className="mt-6 w-full px-2 max-w-4xl">
+            <DailyForecastCard weatherData={weatherData} />
+          </div>
+        </>
+      )}
     </div>
   );
 };
